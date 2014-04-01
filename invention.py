@@ -82,11 +82,11 @@ def get_cuts(file, frame_begin, frame_end):
 					cuts.append(peak)
 					peak_end   = None
 					peak_start = None
-	print(cuts)
+
 	return cuts
 	
 def get_frames_by_index(video_filename, indices):
-	print("Substracting keyframes from '" + video_filename + "'\n")
+	print("Substracting detected keyframes from: '" + video_filename + "'\n")
 	
 	capture	= opencv.VideoCapture(video_filename)
 	
@@ -113,11 +113,24 @@ def get_frames_by_index(video_filename, indices):
 def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	print("Keyframe detection for file '" + video_filename + "'")
 	
-	cuts = get_cuts(video_filename, frame_begin, frame_end)
+	cuts = [frame_begin] + get_cuts(video_filename, frame_begin, frame_end) + [frame_end]
 	# energy = get_audio_energy("./../media/" + video_filename)
 	# energy = get_audio_energy("./../media/" + video_filename)
 	
-	return get_frames_by_index(video_filename, cuts)
+	print("Cuts detected: " + str(cuts) + "\n")
+	
+	keyframes = []
+	min_scene_length = 50
+	
+	for i in range(len(cuts) - 1):
+		# Discard short scenes
+		if cuts[i+1] - cuts[i] >= min_scene_length:
+			# Take middle frame of scene as keyframe
+			keyframes.append((cuts[i] + cuts[i+1]) / 2)
+	
+	print("Keyframes detected: " + str(keyframes) + "\n")
+	
+	return get_frames_by_index(video_filename, keyframes)
 	
 def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
