@@ -8,6 +8,7 @@ from pydub import AudioSegment
 import wave
 import time
 import sys
+import os, glob
 
 """
 This function processes a file by extracting visual features. 
@@ -135,13 +136,24 @@ def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
 	
+	# Change directory to output path
+	os.chdir(output_path)
+	
+	# delete old keyframes in outputfolder
+	print("Removing old keyframes...\n")
+	
+	old_files = glob.glob("*.jpg")
+	
+	for file in old_files:
+		os.unlink(file)
+	
 	# dump to image files
 	print("Dumping found keyframes in: '" + output_path + "'")
 	
 	for (index, frame, time) in frames:
 		keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
 		print(" - " + keyframe_file)
-		opencv.imwrite(output_path + keyframe_file,frame)
+		opencv.imwrite(keyframe_file,frame)
 
 #generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
 generate_keyframes("./../media/video_10.ogv","./output/", 0, 18*30)
