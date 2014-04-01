@@ -128,6 +128,7 @@ def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	for (index, frame, time) in frames:
 		keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
 		print(" - " + keyframe_file)
-		opencv.imwrite(keyframe_file,frame)
+		opencv.imwrite(output_path + keyframe_file,frame)
 
-generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
+#generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
+generate_keyframes("./../media/video_10.ogv","./output/", 0, 18*30)
