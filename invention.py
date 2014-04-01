@@ -31,7 +31,7 @@ def process_video(file,f_features,frame_begin,frame_end):
 		frame_end = frame_count
 	
 	# Start extracting frames from video.
-	while(index < frame_end):
+	while(index <= frame_end):
 		# read 1 frame of video
 		# frame is a numpy.ndarray object
 		features_old 	= features_new
@@ -57,19 +57,46 @@ def get_cuts(file, frame_begin, frame_end):
 	data = process_video(file, temporaldiff.extract, frame_begin, frame_end)
 	return data
 	
+def get_frames_by_index(video_filename, indices):
+	print("Substracting keyframes from '" + video_filename + "'\n")
+	
+	capture	= opencv.VideoCapture(video_filename)
+	
+	index = 0
+	frame_end = max(indices)
+
+	frames = []
+	
+	while (index <= frame_end):
+		(success,frame) = capture.read()
+		
+		if index in indices:
+			frames.append((index,frame))
+		
+		index += 1
+	
+	return frames
+	
 # Set frame_end to -1 to process all frames
 def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	print("Keyframe detection for file '" + video_filename + "'")
 	
-	cuts = get_cuts("./../media/" + video_filename, frame_begin, frame_end)
+	cuts = get_cuts(video_filename, frame_begin, frame_end)
 	# energy = get_audio_energy("./../media/" + video_filename)
 	# energy = get_audio_energy("./../media/" + video_filename)
-	print(cuts)
+	#print(cuts)
 	
-	return [123,345,464] # mocked
+	return get_frames_by_index(video_filename, [123,345,464]) # mocked
 	
 def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
+	
 	# dump to image files
+	print("Dumping found keyframes in: '" + output_path + "'")
+	
+	for (index, frame) in frames:
+		keyframe_file = "keyframe_" + str(index) + ".jpg"
+		print(" - " + keyframe_file)
+		opencv.imwrite(keyframe_file,frame)
 
-generate_keyframes("video_10.ogv","/", 0, 1000)
+generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 500)
