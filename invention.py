@@ -12,10 +12,9 @@ import sys
 """
 This function processes a file by extracting visual features. 
 """
-def process_video(file,f_features):
-	print("Processing video with feature function: " + f_features.__name__)
+def process_video(file,f_features,frame_begin,frame_end):
 	data		= []
-	index	= 0
+	index		= frame_begin
 	
 	# Here we use opencv to capture the video and derive the frame_count
 	# from it.
@@ -27,8 +26,12 @@ def process_video(file,f_features):
 	frame_old		= None
 	features_old	= []
 	features_new	= []
+	
+	if frame_end < 0:
+		frame_end = frame_count
+	
 	# Start extracting frames from video.
-	while(index < frame_count):
+	while(index < frame_end):
 		# read 1 frame of video
 		# frame is a numpy.ndarray object
 		features_old 	= features_new
@@ -51,10 +54,12 @@ def process_video(file,f_features):
 	return data #numpy.asarray(data)
 
 
-def get_keyframes(video_filename, output_path):
+
+# Set frame_end to -1 to process all frames
+def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	print("Keyframe detection for file '" + video_filename + "'")
 	
-	data = process_video("./../media/" + video_filename, temporaldiff.extract)
+	data = process_video("./../media/" + video_filename, temporaldiff.extract, frame_begin, frame_end)
 	print(data)
 	
-get_keyframes("video_07.ogv","/")
+get_keyframes("video_10.ogv","/", 0, 1000)
