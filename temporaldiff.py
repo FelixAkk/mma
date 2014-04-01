@@ -10,5 +10,4 @@ def extract(frame, prev_frame):
 	diff = 0
 	for channel in range(0,3):
 		diff += sum(sum(abs( frame[:,:,channel] - prev_frame[:,:,channel])))
-
 	return diff

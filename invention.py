@@ -50,11 +50,18 @@ def process_video(file,f_features):
 		print("[!] Error Reading Video")
 	return data #numpy.asarray(data)
 
-
+def get_cuts(file):
+	data = process_video(file, temporaldiff.extract)
+	return data
+	
 def get_keyframes(video_filename, output_path):
 	print("Keyframe detection for file '" + video_filename + "'")
 	
-	data = process_video("./../media/" + video_filename, temporaldiff.extract)
-	print(data)
+	cuts = get_cuts("./../media/" + video_filename)
+	# energy = get_audio_energy("./../media/" + video_filename)
+	# energy = get_audio_energy("./../media/" + video_filename)
+	print(cuts)
+	
+	return [123,345,464] # mocked
 	
 get_keyframes("video_07.ogv","/")
