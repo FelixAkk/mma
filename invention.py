@@ -111,20 +111,21 @@ def get_frames_by_index(video_filename, indices):
 	return frames
 	
 # Set frame_end to -1 to process all frames
-def get_keyframes(video_filename, output_path, frame_begin, frame_end):
-	print("Keyframe detection for file '" + video_filename + "'")
+def get_keyframes(filename, output_path, frame_begin, frame_end):
+	print("Keyframe detection for file '" + filename + "'")
+	
+	video_filename = filename + '.ogv'
+	audio_filename = filename + '.wav'
 	
 	cuts = [frame_begin] + get_cuts(video_filename, frame_begin, frame_end) + [frame_end]
-	# energy = get_audio_energy("./../media/" + video_filename)
-	# energy = get_audio_energy("./../media/" + video_filename)
 	
-	print("Cuts detected: " + str(cuts) + "\n")
+	print("Cuts detected (based on video): " + str(cuts) + "\n")
 	
 	keyframes = []
 	min_scene_length = 50
 	
 	for i in range(len(cuts) - 1):
-		# Discard short scenes
+		# Discard short scenes (length below threshold)
 		if cuts[i+1] - cuts[i] >= min_scene_length:
 			# Take middle frame of scene as keyframe
 			keyframes.append((cuts[i] + cuts[i+1]) / 2)
@@ -133,8 +134,8 @@ def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	
 	return get_frames_by_index(video_filename, keyframes)
 	
-def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
-	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
+def generate_keyframes(filename, output_path, frame_begin, frame_end):
+	frames = get_keyframes(filename, output_path, frame_begin, frame_end)
 	
 	# Change directory to output path
 	os.chdir(output_path)
@@ -156,4 +157,4 @@ def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 		opencv.imwrite(keyframe_file,frame)
 
 #generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
-generate_keyframes("./../media/video_10.ogv","./output/", 0, 18*30)
+generate_keyframes("./../media/video_10","./output/", 0, 18*30)
