@@ -1,3 +1,6 @@
+import numpy
+import cv2 as opencv
+
 """
 This function extracts features from a given frame. It extracts a normalized histogram for each of the color channels
 of the frame. 

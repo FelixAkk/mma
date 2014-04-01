@@ -54,8 +54,36 @@ def process_video(file,f_features,frame_begin,frame_end):
 	return data #numpy.asarray(data)
 
 def get_cuts(file, frame_begin, frame_end):
-	data = process_video(file, temporaldiff.extract, frame_begin, frame_end)
-	return data
+	data = process_video(file, histdiff.extract, frame_begin, frame_end)
+	data_sorted = sorted(data, reverse=True)
+	cutoffIndex = int(round(len(data) * 0.05)) # 20% highest diff peaks
+	threshold = data_sorted[cutoffIndex]
+	cut_mask = data > threshold
+	cuts = [] # Let's build an array with the frame numbers of the cuts
+	# Gotta merge clusters of cuts on milisecond level. We chose 
+	# 15 frames, or 500ms, assuming ~30ftps.
+	# (because a cutrate of > 2 cuts/s is insane and barely watchable,
+	# hence unlikely)
+	merge_threshold = 15
+	peak_start = None
+	peak_end   = None
+	for idx in range(0, len(data)):
+		if cut_mask[idx]:
+			if peak_start is None:
+				peak_start = idx
+			if peak_end is None:
+				peak_end = idx
+			else: # Check if this cut is right behind another
+				if idx - peak_end < merge_threshold:
+					 peak_end = idx # merge it in the peak region
+				else: # A peak has ended, and we just take the middel of it
+					peak = peak_start + int(round(( peak_end - peak_start)/2 ))
+					
+					cuts.append(peak)
+					peak_end   = None
+					peak_start = None
+	print(cuts)
+	return cuts
 	
 # Set frame_end to -1 to process all frames
 def get_keyframes(video_filename, output_path, frame_begin, frame_end):
@@ -64,7 +92,6 @@ def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	cuts = get_cuts("./../media/" + video_filename, frame_begin, frame_end)
 	# energy = get_audio_energy("./../media/" + video_filename)
 	# energy = get_audio_energy("./../media/" + video_filename)
-	print(cuts)
 	
 	return [123,345,464] # mocked
 	
@@ -72,4 +99,4 @@ def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
 	# dump to image files
 
-generate_keyframes("video_10.ogv","/", 0, 1000)
+generate_keyframes("video_10.ogv","/", 0,18*30)
