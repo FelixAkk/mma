@@ -2,7 +2,7 @@
 This function extracts features from a given frame. It extracts a normalized histogram for each of the color channels
 of the frame. 
 """
-def extract_histogram(frame, prev_frame):
+def extract(frame, prev_frame):
 	shape = frame.shape
 	num_pixels = shape[0]*shape[1]
 	# Write a function that returns a histogram given a NxMx1 frame. 

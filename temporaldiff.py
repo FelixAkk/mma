@@ -1,4 +1,4 @@
-def extract_temporal_difference(frame, prev_frame):
+def extract(frame, prev_frame):
 	# implement the sum of pixel differences between two frames
 	shape 		= frame.shape
 	num_pixels 	= shape[0]*shape[1]
