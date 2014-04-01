@@ -93,7 +93,7 @@ def get_keyframes(video_filename, output_path, frame_begin, frame_end):
 	# energy = get_audio_energy("./../media/" + video_filename)
 	# energy = get_audio_energy("./../media/" + video_filename)
 	
-	return [123,345,464] # mocked
+	return cuts
 	
 def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	frames = get_keyframes(video_filename, output_path, frame_begin, frame_end)
