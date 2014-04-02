@@ -96,11 +96,15 @@ def get_frames_by_index(video_filename, indices):
 
 	frames = []
 	
+	fps = capture.get(opencv.cv.CV_CAP_PROP_FPS)
+	
 	while (index <= frame_end):
 		(success,frame) = capture.read()
 		
 		if index in indices:
-			frames.append((index,frame))
+			time = index/fps
+			
+			frames.append((index,frame,time))
 		
 		index += 1
 	
@@ -122,9 +126,10 @@ def generate_keyframes(video_filename, output_path, frame_begin, frame_end):
 	# dump to image files
 	print("Dumping found keyframes in: '" + output_path + "'")
 	
-	for (index, frame) in frames:
-		keyframe_file = "keyframe_" + str(index) + ".jpg"
+	for (index, frame, time) in frames:
+		keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
 		print(" - " + keyframe_file)
-		opencv.imwrite(keyframe_file,frame)
+		opencv.imwrite(output_path + keyframe_file,frame)
 
-generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
+#generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
+generate_keyframes("./../media/video_10.ogv","./output/", 0, 18*30)
