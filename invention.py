@@ -127,7 +127,7 @@ def get_histdiff_cuts(file, second_begin, second_end):
 	print(cuts)
 	return cuts
 	
-def get_audioenergy_cuts(file, second_begin, second_end):
+def get_audioenergy_peaks(file, second_begin, second_end):
 	data = process_audio(file, audioenergy.extract, second_begin, second_end)
 	data_sorted = sorted(data, reverse=True)
 	cutoffIndex = int(round(len(data) * 0.07))
@@ -186,13 +186,14 @@ def get_frames_by_index(video_filename, indices):
 	return frames
 	
 # Set frame_end to -1 to process all frames
-def get_keyframes(filename, output_path, frame_begin, frame_end):
+def get_keyframes(filename, output_path, second_begin, second_end):
 	print("Keyframe detection for file '" + filename + "'")
 	
 	video_filename = filename + '.ogv'
 	audio_filename = filename + '.wav'
 	
-	cuts = [frame_begin] + get_cuts(video_filename, frame_begin, frame_end) + [frame_end]
+	cuts = [second_begin] + get_histdiff_cuts(video_filename, second_begin, second_end) + [second_end]
+	print(get_audioenergy_peaks(video_filename, second_begin, second_end))
 	
 	print("Cuts detected (based on video): " + str(cuts) + "\n")
 	
@@ -209,8 +210,8 @@ def get_keyframes(filename, output_path, frame_begin, frame_end):
 	
 	return get_frames_by_index(video_filename, keyframes)
 	
-def generate_keyframes(filename, output_path, frame_begin, frame_end):
-	frames = get_keyframes(filename, output_path, frame_begin, frame_end)
+def generate_keyframes(filename, output_path, second_begin, second_end):
+	frames = get_keyframes(filename, output_path, second_begin, second_end)
 	
 	# Change directory to output path
 	os.chdir(output_path)
