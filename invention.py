@@ -12,6 +12,7 @@ from pydub import AudioSegment
 import wave
 import time
 import sys
+import os, glob
 
 """
 This function processes a file by extracting visual features. 
@@ -157,11 +158,11 @@ def get_audioenergy_cuts(file, second_begin, second_end):
 					cuts.append(peak)
 					peak_end   = None
 					peak_start = None
-	print(cuts)
+
 	return cuts
 	
 def get_frames_by_index(video_filename, indices):
-	print("Substracting keyframes from '" + video_filename + "'\n")
+	print("Substracting detected keyframes from: '" + video_filename + "'\n")
 	
 	capture	= opencv.VideoCapture(video_filename)
 	
@@ -185,18 +186,42 @@ def get_frames_by_index(video_filename, indices):
 	return frames
 	
 # Set frame_end to -1 to process all frames
-def get_keyframes(filename, output_path, second_begin, second_end):
+def get_keyframes(filename, output_path, frame_begin, frame_end):
 	print("Keyframe detection for file '" + filename + "'")
 	
-	cuts = get_histdiff_cuts(filename + ".ogv",    second_begin, second_end)
-	cuts = get_audioenergy_cuts(filename + ".wav", second_begin, second_end)
-	# energy = get_audio_energy("./../media/" + video_filename)
-	# energy = get_audio_energy("./../media/" + video_filename)
+	video_filename = filename + '.ogv'
+	audio_filename = filename + '.wav'
 	
-	return get_frames_by_index(filename + ".ogv", cuts)
+	cuts = [frame_begin] + get_cuts(video_filename, frame_begin, frame_end) + [frame_end]
 	
-def generate_keyframes(filename, output_path, second_begin, second_end):
-	frames = get_keyframes(filename, output_path, second_begin, second_end)
+	print("Cuts detected (based on video): " + str(cuts) + "\n")
+	
+	keyframes = []
+	min_scene_length = 50
+	
+	for i in range(len(cuts) - 1):
+		# Discard short scenes (length below threshold)
+		if cuts[i+1] - cuts[i] >= min_scene_length:
+			# Take middle frame of scene as keyframe
+			keyframes.append((cuts[i] + cuts[i+1]) / 2)
+	
+	print("Keyframes detected: " + str(keyframes) + "\n")
+	
+	return get_frames_by_index(video_filename, keyframes)
+	
+def generate_keyframes(filename, output_path, frame_begin, frame_end):
+	frames = get_keyframes(filename, output_path, frame_begin, frame_end)
+	
+	# Change directory to output path
+	os.chdir(output_path)
+	
+	# delete old keyframes in outputfolder
+	print("Removing old keyframes...\n")
+	
+	old_files = glob.glob("*.jpg")
+	
+	for file in old_files:
+		os.unlink(file)
 	
 	# dump to image files
 	print("Dumping found keyframes in: '" + output_path + "'")
@@ -204,7 +229,7 @@ def generate_keyframes(filename, output_path, second_begin, second_end):
 	for (index, frame, time) in frames:
 		keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
 		print(" - " + keyframe_file)
-		opencv.imwrite(output_path + keyframe_file,frame)
+		opencv.imwrite(keyframe_file,frame)
 
 #generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
 generate_keyframes("./../media/video_10","./output/", 0, 18)
