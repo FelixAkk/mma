@@ -27,7 +27,8 @@ def process_video(file,f_features,second_begin,second_end):
 	# from it.
 	capture		= opencv.VideoCapture(file)
 	frame_count	= capture.get(opencv.cv.CV_CAP_PROP_FRAME_COUNT)
-	sec_per_frame	= 1 / capture.get(opencv.cv.CV_CAP_PROP_FPS)
+	fps = capture.get(opencv.cv.CV_CAP_PROP_FPS)
+	sec_per_frame	= 1 / fps
 	
 	feat 			= None
 	frame_old		= None
@@ -58,7 +59,7 @@ def process_video(file,f_features,second_begin,second_end):
 	print("\n")
 	if not data:
 		print("[!] Error Reading Video")
-	return data #numpy.asarray(data)
+	return (data, fps) #numpy.asarray(data)
 
 """
 This function processes a file by extracting audio features. 
@@ -71,15 +72,15 @@ def process_audio(file, f_features, second_begin, second_end):
 	mfcc_file 	= file[:len(file)-3]+"mfcc"
 	f 			= open(mfcc_file)	
 	mfcc_data	= f.readline().split()
-	samples_per_window 	= 1024
+	samples_per_window 	= rate/29.97 #1024
 	start_sample 		= second_begin * rate
 	end_sample			= start_sample + samples_per_window
 	# uncomment the line below if processing the whole file takes too long
-	max_samples			= min(second_end * rate,len(ampl))
+	max_samples			= min((second_end+1) * rate, len(ampl))
 	
 	while end_sample < max_samples:
 		# Give it all available data ...
-		feat = audioenergy.extract(ampl[start_sample:end_sample], mfcc_data, start_sample, samples_per_window, max_samples)
+		feat = f_features(ampl[start_sample:end_sample], mfcc_data, start_sample, samples_per_window, max_samples)
 
 		data.append(feat)
 		start_sample += samples_per_window
@@ -90,12 +91,11 @@ def process_audio(file, f_features, second_begin, second_end):
 			sys.stdout.write("\r" + str( (end_sample * 100) / max_samples ) + "%")
 			sys.stdout.flush()
 	
-	print 
 	f.close()
-	return data
+	return (data, rate)
 	
 def get_histdiff_cuts(file, second_begin, second_end):
-	data = process_video(file, histdiff.extract, second_begin, second_end)
+	(data, fps) = process_video(file, histdiff.extract, second_begin, second_end)
 	data_sorted = sorted(data, reverse=True)
 	cutoffIndex = int(round(len(data) * 0.07))
 	threshold = data_sorted[cutoffIndex]
@@ -110,7 +110,6 @@ def get_histdiff_cuts(file, second_begin, second_end):
 	peak_end   = None
 	for idx in range(0, len(data)):
 		if cut_mask[idx]:
-			print(idx)
 			if peak_start is None:
 				peak_start = idx
 			if peak_end is None:
@@ -124,42 +123,28 @@ def get_histdiff_cuts(file, second_begin, second_end):
 					cuts.append(peak)
 					peak_end   = None
 					peak_start = None
-	print(cuts)
-	return cuts
+	return [second_begin*30] + cuts + [second_end*30]
 	
-def get_audioenergy_peaks(file, second_begin, second_end):
-	data = process_audio(file, audioenergy.extract, second_begin, second_end)
-	data_sorted = sorted(data, reverse=True)
-	cutoffIndex = int(round(len(data) * 0.07))
-	threshold = data_sorted[cutoffIndex]
-	cut_mask = data > threshold
-	cuts = [] # Let's build an array with the frame numbers of the cuts
-	# Let's build an array with the frame numbers of the cuts
-	# Gotta merge clusters of cuts on milisecond level. We chose 
-	# 10 frames, or 300ms, assuming ~10ftps.
-	# (because a cutrate of > 3 cuts/s is insane and barely watchable,
-	# hence unlikely)
-	merge_threshold = 10
-	peak_start = None
-	peak_end   = None
-	for idx in range(0, len(data)):
-		if cut_mask[idx]:
-			print(idx)
-			if peak_start is None:
-				peak_start = idx
-			if peak_end is None:
-				peak_end = idx
-			else: # Check if this cut is right behind another
-				if idx - peak_end < merge_threshold:
-					 peak_end = idx # merge it in the peak region
-				else: # A peak has ended, and we just take the middel of it
-					peak = peak_start + int(round(( peak_end - peak_start)/2 ))
-					
-					cuts.append(peak)
-					peak_end   = None
-					peak_start = None
+def get_audioenergy_peaks(file, second_begin, second_end, cuts):
+	(data, rate) = process_audio(file, audioenergy.extract, second_begin, second_end)
+	peaks = []
+	window_length = 1024
+	
+	min_scene_length = 50
+	for i in range(len(cuts) - 1):
+		# Discard short scenes (length below threshold)
+		if cuts[i+1] - cuts[i] <= min_scene_length:
+			print("to short cut, ignoring" + str(cuts[i]) + " to " + str(cuts[i+1]))
+			continue
+		peak = -1
+		peakIdx = -1
+		for idx in range(cuts[i], cuts[i+1]):
+			if data[idx] > peak:
+				peak = data[idx]
+				peakIdx = idx
+		peaks.append(peakIdx)
+	return peaks
 
-	return cuts
 	
 def get_frames_by_index(video_filename, indices):
 	print("Substracting detected keyframes from: '" + video_filename + "'\n")
@@ -192,23 +177,15 @@ def get_keyframes(filename, output_path, second_begin, second_end):
 	video_filename = filename + '.ogv'
 	audio_filename = filename + '.wav'
 	
-	cuts = [second_begin] + get_histdiff_cuts(video_filename, second_begin, second_end) + [second_end]
-	print(get_audioenergy_peaks(video_filename, second_begin, second_end))
-	
+	cuts = get_histdiff_cuts(video_filename, second_begin, second_end)
 	print("Cuts detected (based on video): " + str(cuts) + "\n")
+	peaks = get_audioenergy_peaks(audio_filename, second_begin, second_end, cuts)
+	print("Peaks detected (based on audio): " + str(peaks) + "\n")
 	
-	keyframes = []
-	min_scene_length = 50
+	#keyframes = []
+	#print("Keyframes detected: " + str(keyframes) + "\n")
 	
-	for i in range(len(cuts) - 1):
-		# Discard short scenes (length below threshold)
-		if cuts[i+1] - cuts[i] >= min_scene_length:
-			# Take middle frame of scene as keyframe
-			keyframes.append((cuts[i] + cuts[i+1]) / 2)
-	
-	print("Keyframes detected: " + str(keyframes) + "\n")
-	
-	return get_frames_by_index(video_filename, keyframes)
+	return get_frames_by_index(video_filename, peaks)
 	
 def generate_keyframes(filename, output_path, second_begin, second_end):
 	frames = get_keyframes(filename, output_path, second_begin, second_end)
