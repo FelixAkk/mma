@@ -56,19 +56,20 @@ def process_video(file,f_features,frame_begin,frame_end):
 def get_cuts(file, frame_begin, frame_end):
 	data = process_video(file, histdiff.extract, frame_begin, frame_end)
 	data_sorted = sorted(data, reverse=True)
-	cutoffIndex = int(round(len(data) * 0.05)) # 20% highest diff peaks
+	cutoffIndex = int(round(len(data) * 0.07))
 	threshold = data_sorted[cutoffIndex]
 	cut_mask = data > threshold
 	cuts = [] # Let's build an array with the frame numbers of the cuts
 	# Gotta merge clusters of cuts on milisecond level. We chose 
-	# 15 frames, or 500ms, assuming ~30ftps.
-	# (because a cutrate of > 2 cuts/s is insane and barely watchable,
+	# 10 frames, or 300ms, assuming ~10ftps.
+	# (because a cutrate of > 3 cuts/s is insane and barely watchable,
 	# hence unlikely)
-	merge_threshold = 15
+	merge_threshold = 10
 	peak_start = None
 	peak_end   = None
 	for idx in range(0, len(data)):
 		if cut_mask[idx]:
+			print(idx)
 			if peak_start is None:
 				peak_start = idx
 			if peak_end is None:
