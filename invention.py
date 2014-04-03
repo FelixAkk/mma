@@ -97,7 +97,7 @@ def process_audio(file, f_features, second_begin, second_end):
 def get_histdiff_cuts(file, second_begin, second_end):
 	(data, fps) = process_video(file, histdiff.extract, second_begin, second_end)
 	data_sorted = sorted(data, reverse=True)
-	cutoffIndex = int(round(len(data) * 0.07))
+	cutoffIndex = int(round(len(data) * 0.2))
 	threshold = data_sorted[cutoffIndex]
 	cut_mask = data > threshold
 	cuts = [] # Let's build an array with the frame numbers of the cuts
@@ -190,6 +190,34 @@ def get_keyframes(filename, output_path, second_begin, second_end):
 def generate_keyframes(filename, output_path, second_begin, second_end):
 	frames = get_keyframes(filename, output_path, second_begin, second_end)
 	
+	total_histdiff = 0
+	i = 0
+	
+	histdiffs = []
+	
+	for (index, frame, time) in frames:
+		for (index_other, frame_other, time_other) in frames:
+			if index != index_other:
+				i += 1
+				cur_histdiff = histdiff.extract(frame, frame_other)
+				total_histdiff += cur_histdiff
+				
+				histdiffs.append((index, index_other, cur_histdiff))
+				
+				print "a: " + str(index) + " b: " + str(index_other) + "  " + str(cur_histdiff)
+				
+	avg_histdiff = total_histdiff / i
+				
+	print "Average histdiff between keyframes: " + str(avg_histdiff) + "\n"
+	
+	duplicates = []
+	
+	for (index, index_other, diff) in histdiffs:
+		if diff < avg_histdiff * 0.5:
+			duplicates.append(index_other)
+	
+	print "Duplicates found: " + str(duplicates)
+	
 	# Change directory to output path
 	os.chdir(output_path)
 	
@@ -205,9 +233,10 @@ def generate_keyframes(filename, output_path, second_begin, second_end):
 	print("Dumping found keyframes in: '" + output_path + "'")
 	
 	for (index, frame, time) in frames:
-		keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
-		print(" - " + keyframe_file)
-		opencv.imwrite(keyframe_file,frame)
+		if not index in duplicates:
+			keyframe_file = "keyframe_" + str(index) + "_" + str(round(time*100)/100) + "s.jpg"
+			print(" - " + keyframe_file)
+			opencv.imwrite(keyframe_file,frame)
 
 #generate_keyframes("./../media/video_10.ogv","/home/ilva/multimedia-lab/output/", 0, 18*30)
-generate_keyframes("./../media/video_10","./output/", 0, 18)
+generate_keyframes("./../media/video_10","./output/", 0, 120)
